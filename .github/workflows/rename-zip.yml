@@ -1,0 +1,24 @@
+name: Rename zip
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Rename upload zip
+        run: |
+          ls -la
+          mv Henshin15_upload.zip Henshin15.zip
+          ls -la Henshin15.zip
+          git config user.name "tengjingtori-beep"
+          git config user.email "tengjingtori-beep@users.noreply.github.com"
+          git add -A
+          git commit -m "Rename Henshin15_upload.zip to Henshin15.zip"
+          git push
