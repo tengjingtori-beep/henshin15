@@ -1,0 +1,60 @@
+name: Build TrollStore IPA
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Henshin15.zip'
+      - 'Henshin15/**'
+      - 'Henshin15.xcodeproj/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unpack project zip if needed
+        run: |
+          if [ ! -d "Henshin15.xcodeproj" ]; then
+            unzip -o Henshin15.zip
+          fi
+          ls -la
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build unsigned app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Henshin15.xcodeproj \
+            -scheme Henshin15 \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Package TrollStore IPA
+        run: |
+          APP=$(find "$RUNNER_TEMP/DerivedData/Build/Products" -name "Henshin15.app" -maxdepth 2 | head -1)
+          if [ -z "$APP" ]; then
+            echo ".app not found" >&2
+            exit 1
+          fi
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry Henshin15.tipa Payload
+          ls -la Henshin15.tipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Henshin15-tipa
+          path: Henshin15.tipa
