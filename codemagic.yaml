@@ -1,0 +1,43 @@
+workflows:
+  henshin15-trollstore:
+    name: Henshin15 (TrollStore)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Build unsigned app
+        script: |
+          set -o pipefail
+          xcodebuild \
+            -project Henshin15.xcodeproj \
+            -scheme Henshin15 \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package tipa and ipa
+        script: |
+          APP=$(find "$CM_BUILD_DIR/DerivedData/Build/Products" -name "Henshin15.app" -maxdepth 2 | head -1)
+          if [ -z "$APP" ]; then
+            echo ".app not found" >&2
+            exit 1
+          fi
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry Henshin15.tipa Payload
+          cp Henshin15.tipa Henshin15.ipa
+          ls -la Henshin15.tipa Henshin15.ipa
+    artifacts:
+      - Henshin15.tipa
+      - Henshin15.ipa
