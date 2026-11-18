@@ -13,6 +13,12 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Unpack project zip if needed
+        script: |
+          if [ ! -d "Henshin15.xcodeproj" ]; then
+            unzip -o Henshin15.zip
+          fi
+          ls -la
       - name: Build unsigned app
         script: |
           set -o pipefail
